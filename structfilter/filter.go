@@ -43,7 +43,7 @@ func RemoveFieldFilter(m Matcher) Func {
 // the specified tag string is not present yet. The string tag must have the
 // conventional format for a single key-value pair:
 //
-//     key:"value"
+//	key:"value"
 //
 // If an original tag string does not have the conventional format, the
 // behaviour of the returned filter is unspecified.
@@ -103,6 +103,7 @@ func (t *T) filterType(orig reflect.Type) (filtered reflect.Type, err error) {
 		field := Field{
 			name: origField.Name,
 			Tag:  origField.Tag,
+			Type: origField.Type,
 			keep: true,
 		}
 		if err = t.filter(&field); err != nil {

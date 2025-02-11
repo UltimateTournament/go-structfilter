@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
 	"strings"
+	"time"
 
 	"github.com/UltimateTournament/go-structfilter/structfilter"
 )
@@ -14,8 +16,17 @@ type User struct {
 	Name          string
 	Password      string `req_role:"admin superadmin"`
 	PasswordAdmin string `req_role:"superadmin"`
-	LoginTime     int64
+	LoginTime     time.Time
+	*EmbeddedTest `req_role:"admin superadmin"`
+	AgeP          *Duration
+	Age           Duration
 }
+
+type EmbeddedTest struct {
+	EmbeddedField string
+}
+
+var age = Duration(123 * time.Hour)
 
 var userDB = map[string][]*User{
 	"foo_DB": {
@@ -23,22 +34,28 @@ var userDB = map[string][]*User{
 			Name:          "Alice",
 			Password:      "$6$sensitive",
 			PasswordAdmin: "$6$verysensitive",
-			LoginTime:     1234567890,
+			LoginTime:     time.Now().Add(-24 * time.Hour),
+			Age:           Duration(999 * time.Hour),
 		},
 		{
 			Name:      "Bob",
 			Password:  "$6$private",
-			LoginTime: 1357924680,
+			LoginTime: time.Now().Add(-36 * time.Hour),
+			EmbeddedTest: &EmbeddedTest{
+				EmbeddedField: "test1",
+			},
+			AgeP: &age,
 		},
 	},
 }
 
 func main() {
-	userRole := "editor"
+	userRole := "admin"
 	converted, err := createRoleStructFilter(userRole).Convert(userDB)
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("%#v\n", converted)
 	jsonData, err := json.MarshalIndent(converted, "", "    ")
 	if err != nil {
 		log.Fatal(err)
@@ -46,22 +63,30 @@ func main() {
 	fmt.Println(string(jsonData))
 }
 
+var jsonMarshallerType = reflect.TypeOf((*json.Marshaler)(nil)).Elem()
+
 func createRoleStructFilter(userRole string) *structfilter.T {
-	filter := structfilter.New(
-		func(f *structfilter.Field) error {
-			reqRolesStr := f.Tag.Get("req_role")
-			if reqRolesStr == "" {
+	roleFilter := func(f *structfilter.Field) error {
+		reqRolesStr := f.Tag.Get("req_role")
+		if reqRolesStr == "" {
+			return nil
+		}
+		reqRoles := strings.Split(reqRolesStr, " ")
+		for _, reqRole := range reqRoles {
+			if userRole == reqRole {
 				return nil
 			}
-			reqRoles := strings.Split(reqRolesStr, " ")
-			for _, reqRole := range reqRoles {
-				if userRole == reqRole {
-					return nil
-				}
-			}
-			f.Remove()
-			return nil
-		},
-	)
+		}
+		f.Remove()
+		return nil
+	}
+	keepCustomJsonFilter := func(f *structfilter.Field) error {
+		hasCustomJsonMarshaller := f.Type.AssignableTo(jsonMarshallerType)
+		if hasCustomJsonMarshaller {
+			f.KeepRaw()
+		}
+		return nil
+	}
+	filter := structfilter.New(roleFilter, keepCustomJsonFilter)
 	return filter
 }

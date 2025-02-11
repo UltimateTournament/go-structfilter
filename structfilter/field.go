@@ -14,7 +14,9 @@ type Field struct {
 	Tag reflect.StructTag
 
 	// keep indicates whether the field should be kept.
-	keep bool
+	keep    bool
+	Type    reflect.Type
+	keepRaw bool
 }
 
 // Name returns the name of this field.
@@ -37,6 +39,13 @@ func (f *Field) Keep() {
 	f.keep = true
 }
 
+// KeepRaw indicates that this field should be part of the filtered structure
+// without further filtering.
+func (f *Field) KeepRaw() {
+	f.keep = true
+	f.keepRaw = true
+}
+
 // newField creates a new struct field based on the original field and field.
 func (t *T) newField(
 	orig *reflect.StructField, field *Field,
@@ -46,14 +55,18 @@ func (t *T) newField(
 		Tag:       field.Tag,
 		Anonymous: orig.Anonymous,
 	}
-	mappedType, err := t.mapType(orig.Type)
-	if err != nil {
-		return reflect.StructField{}, err
+	fieldType := orig.Type
+	if !field.keepRaw {
+		mappedType, err := t.mapType(orig.Type)
+		if err != nil {
+			return reflect.StructField{}, err
+		}
+		fieldType = mappedType
 	}
-	if mappedType == nil {
+	if fieldType == nil {
 		result.Type = interfaceType
 	} else {
-		result.Type = mappedType
+		result.Type = fieldType
 	}
 	return result, nil
 }
