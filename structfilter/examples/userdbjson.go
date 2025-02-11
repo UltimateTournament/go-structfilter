@@ -4,45 +4,38 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"reflect"
-	"regexp"
 	"strings"
 
-	"github.com/TheCount/go-structfilter/structfilter"
+	"github.com/UltimateTournament/go-structfilter/structfilter"
 )
 
 // User represents a user entry in a user database.
 type User struct {
 	Name          string
-	Password      string
-	PasswordAdmin string
+	Password      string `req_role:"admin superadmin"`
+	PasswordAdmin string `req_role:"superadmin"`
 	LoginTime     int64
 }
 
-var userDB = []User{
-	User{
-		Name:          "Alice",
-		Password:      "$6$sensitive",
-		PasswordAdmin: "$6$verysensitive",
-		LoginTime:     1234567890,
-	},
-	User{
-		Name:      "Bob",
-		Password:  "$6$private",
-		LoginTime: 1357924680,
+var userDB = map[string][]*User{
+	"foo_DB": {
+		{
+			Name:          "Alice",
+			Password:      "$6$sensitive",
+			PasswordAdmin: "$6$verysensitive",
+			LoginTime:     1234567890,
+		},
+		{
+			Name:      "Bob",
+			Password:  "$6$private",
+			LoginTime: 1357924680,
+		},
 	},
 }
 
 func main() {
-	filter := structfilter.New(
-		structfilter.RemoveFieldFilter(regexp.MustCompile("^Password.*$")),
-		func(f *structfilter.Field) error {
-			f.Tag = reflect.StructTag(fmt.Sprintf(`json:"%s"`,
-				strings.ToLower(f.Name())))
-			return nil
-		},
-	)
-	converted, err := filter.Convert(userDB)
+	userRole := "editor"
+	converted, err := createRoleStructFilter(userRole).Convert(userDB)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,4 +44,24 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println(string(jsonData))
+}
+
+func createRoleStructFilter(userRole string) *structfilter.T {
+	filter := structfilter.New(
+		func(f *structfilter.Field) error {
+			reqRolesStr := f.Tag.Get("req_role")
+			if reqRolesStr == "" {
+				return nil
+			}
+			reqRoles := strings.Split(reqRolesStr, " ")
+			for _, reqRole := range reqRoles {
+				if userRole == reqRole {
+					return nil
+				}
+			}
+			f.Remove()
+			return nil
+		},
+	)
+	return filter
 }

@@ -1,3 +1,3 @@
-module github.com/TheCount/go-structfilter
+module github.com/UltimateTournament/go-structfilter
 
-go 1.13
+go 1.23

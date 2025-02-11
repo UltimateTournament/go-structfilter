@@ -68,7 +68,7 @@ func TestSimpleStructReflectType(t *testing.T) {
 			filtered.Kind())
 	}
 	if filtered.NumField() != origType.NumField() {
-		t.Fatal("Expected orig and filtered struct to have same number of fields "+
+		t.Fatalf("Expected orig and filtered struct to have same number of fields "+
 			"with empty filter, got %d != %d",
 			origType.NumField(), filtered.NumField())
 	}
@@ -143,7 +143,7 @@ func TestNestedReflectType(t *testing.T) {
 		t.Fatalf("Error filtering nested struct: %s", err)
 	}
 	if filtered.NumField() != origType.NumField() {
-		t.Fatal("Expected orig and filtered struct to have same number of fields "+
+		t.Fatalf("Expected orig and filtered struct to have same number of fields "+
 			"with empty filter, got %d != %d",
 			origType.NumField(), filtered.NumField())
 	}

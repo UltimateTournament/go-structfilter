@@ -32,7 +32,7 @@ func (f *Field) Remove() {
 // Keep indicates that this field should be part of the filtered structure.
 // This is the default. However, calling Keep explicitly may be necessary to
 // countermand a Remove call by an earlier filter. A later filter might cause
-// the field to be expluded after all by calling Remove again.
+// the field to be excluded after all by calling Remove again.
 func (f *Field) Keep() {
 	f.keep = true
 }

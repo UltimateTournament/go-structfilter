@@ -1,3 +1,5 @@
+Fork from https://github.com/TheCount/go-structfilter
+
 # structfilter
 
 ![](https://github.com/TheCount/go-structfilter/workflows/CI/badge.svg)
